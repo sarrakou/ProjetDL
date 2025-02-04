@@ -1,0 +1,9 @@
+[package]
+name = "algorithms"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+environments = { path = "../environments" }
+rand = "0.9.0"
+rand_xoshiro = "0.7.0"
