@@ -4,6 +4,7 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use crate::RLAlgorithm;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct DynaQ {
     q_table: Vec<Vec<f32>>,
     model: HashMap<(usize, usize), (f32, usize)>, // (state, action) -> (reward, next_state)

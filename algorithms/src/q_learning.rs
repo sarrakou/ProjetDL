@@ -3,6 +3,7 @@ use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use crate::RLAlgorithm;
 
+#[derive(Clone)]
 pub struct QLearning {
     q_table: Vec<Vec<f32>>,
     alpha: f32,

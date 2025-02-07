@@ -9,6 +9,7 @@ use environments::{
     line_world::LineWorld,
     grid_world::GridWorld,
     rps::RPS,
+    secret_env::SecretEnv,
 };
 fn test_algorithm<T: Environment + Clone>(
     algo_name: &str,
@@ -89,6 +90,7 @@ fn compare_algorithms<T: Environment + Clone>(
     }
 }
 fn main() {
+    println!("\nTesting on basic environments:");
     let q_learning = QLearning::new(
         LineWorld::new().num_states(),
         LineWorld::new().num_actions(),
@@ -147,8 +149,55 @@ fn main() {
     );
     test_algorithm("Dyna-Q", dyna_q, "Rock Paper Scissors", RPS::new());
 
+    println!("\nTesting on secret environments:");
+    for env_id in 0..4 {
+        let env = SecretEnv::new(env_id);
+        let q_learning = QLearning::new(
+            env.num_states(),
+            env.num_actions(),
+            0.1,    // alpha
+            0.1,    // epsilon
+            0.99,   // gamma
+        );
+
+        let dyna_q = DynaQ::new(
+            env.num_states(),
+            env.num_actions(),
+            0.1,    // alpha
+            0.1,    // epsilon
+            0.99,   // gamma
+            5,      // planning steps
+        );
+
+        test_algorithm(
+            "Q-Learning",
+            q_learning.clone(),
+            &format!("Secret Environment {}", env_id),
+            env.clone()
+        );
+
+        test_algorithm(
+            "Dyna-Q",
+            dyna_q.clone(),
+            &format!("Secret Environment {}", env_id),
+            env.clone()
+        );
+
+        // Compare algorithms
+        /*compare_algorithms(
+            "Q-Learning",
+            q_learning,
+            "Dyna-Q",
+            dyna_q,
+            &format!("Secret Environment {}", env_id),
+            env,
+            1000,  // episodes
+            5,     // runs
+        );*/
+    }
+
     // Compare algorithms on each environment
-    let q_learning = QLearning::new(
+    /* let q_learning = QLearning::new(
         LineWorld::new().num_states(),
         LineWorld::new().num_actions(),
         0.1, 0.1, 0.99
@@ -209,5 +258,5 @@ fn main() {
         RPS::new(),
         1000,
         5
-    );
+    );*/
 }
