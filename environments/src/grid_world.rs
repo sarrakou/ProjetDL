@@ -1,5 +1,6 @@
 use crate::Environment;
 
+#[derive(Clone)]
 pub struct GridWorld {
     pos_x: usize,
     pos_y: usize,

@@ -1,5 +1,6 @@
 use crate::Environment;
 
+#[derive(Clone)]
 pub struct LineWorld {
     pos: usize,
 }

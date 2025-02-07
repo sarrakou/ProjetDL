@@ -1,8 +1,9 @@
 use crate::Environment;
 use rand::Rng;
 
+#[derive(Clone)]
 pub struct RPS {
-    pub current_round: usize,
+    current_round: usize,
     max_rounds: usize,
     player_score: f32,
     opponent_last_move: Option<usize>,
