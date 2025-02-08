@@ -2,6 +2,8 @@ use algorithms::{
     RLAlgorithm,
     q_learning::QLearning,
     dyna_q::DynaQ ,
+    SARSA::Sarsa,
+    SemiGradiantSARSA::SemiGradientSarsa,
 };
 
 use environments::{
@@ -10,6 +12,9 @@ use environments::{
     grid_world::GridWorld,
     rps::RPS,
 };
+
+
+
 fn test_algorithm<T: Environment + Clone>(
     algo_name: &str,
     mut algorithm: impl RLAlgorithm,
@@ -210,4 +215,102 @@ fn main() {
         1000,
         5
     );
+
+    println!("\n=== Tests de SARSA ===");
+
+    let sarsa = Sarsa::new(
+        LineWorld::new().num_states(),
+        LineWorld::new().num_actions(),
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("SARSA", sarsa, "LineWorld", LineWorld::new());
+
+    let sarsa = Sarsa::new(
+        GridWorld::new().num_states(),
+        GridWorld::new().num_actions(),
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("SARSA", sarsa, "GridWorld", GridWorld::new());
+
+    let sarsa = Sarsa::new(
+        RPS::new().num_states(),
+        RPS::new().num_actions(),
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("SARSA", sarsa, "Rock Paper Scissors", RPS::new());
+
+    println!("\n=== Tests de Semi-Gradient SARSA ===");
+
+    let semi_gradient = SemiGradientSarsa::new(
+        100,
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("Semi-Gradient SARSA", semi_gradient, "LineWorld", LineWorld::new());
+
+    let semi_gradient = SemiGradientSarsa::new(
+        200,
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("Semi-Gradient SARSA", semi_gradient, "GridWorld", GridWorld::new());
+
+    let semi_gradient = SemiGradientSarsa::new(
+        50,
+        0.1,
+        0.1,
+        0.99,
+    );
+    test_algorithm("Semi-Gradient SARSA", semi_gradient, "Rock Paper Scissors", RPS::new());
+
+    println!("\n=== Comparaisons des algorithmes ===");
+
+    let sarsa = Sarsa::new(
+        LineWorld::new().num_states(),
+        LineWorld::new().num_actions(),
+        0.1, 0.1, 0.99
+    );
+    let semi_gradient = SemiGradientSarsa::new(
+        100, 0.1, 0.1, 0.99
+    );
+    compare_algorithms(
+        "SARSA",
+        sarsa,
+        "Semi-Gradient SARSA",
+        semi_gradient,
+        "LineWorld",
+        LineWorld::new(),
+        1000,
+        5
+    );
+
+    let sarsa = Sarsa::new(
+        LineWorld::new().num_states(),
+        LineWorld::new().num_actions(),
+        0.1, 0.1, 0.99
+    );
+    let q_learning = QLearning::new(
+        LineWorld::new().num_states(),
+        LineWorld::new().num_actions(),
+        0.1, 0.1, 0.99
+    );
+    compare_algorithms(
+        "SARSA",
+        sarsa,
+        "Q-Learning",
+        q_learning,
+        "LineWorld",
+        LineWorld::new(),
+        1000,
+        5
+    );
+
 }

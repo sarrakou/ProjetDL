@@ -1,5 +1,7 @@
 pub mod q_learning;
 pub mod dyna_q;
+pub mod SARSA;
+pub mod SemiGradiantSARSA;
 
 pub trait RLAlgorithm {
     fn train<T: environments::Environment>(&mut self, env: &mut T, max_episodes: usize) -> Vec<f32>;
