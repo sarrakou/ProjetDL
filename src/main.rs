@@ -7,6 +7,7 @@ use environments::{
     Environment,
     line_world::LineWorld,
     grid_world::GridWorld,  // Import de GridWorld
+    rps::RPS,
 };
 
 fn test_algorithm<T: Environment + Clone>(algo_name: &str, mut algorithm: PolicyIteration, env_name: &str, mut env: T) {
@@ -75,7 +76,7 @@ fn main() {
     );*/
 
     // Test de l'algorithme sur GridWorld
-    test_algorithm(
+    /*test_algorithm(
         "Policy Iteration",
         PolicyIteration::new(
             GridWorld::new().num_states(),
@@ -85,5 +86,16 @@ fn main() {
         ),
         "GridWorld",
         GridWorld::new()
+    );*/
+    test_algorithm(
+        "Policy Iteration",
+        PolicyIteration::new(
+            RPS::new().num_states(),
+            RPS::new().num_actions(),
+            0.99,
+            1e-6
+        ),
+        "RPS",
+        RPS::new()
     );
 }

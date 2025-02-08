@@ -89,14 +89,45 @@ impl Environment for RPS {
     }
 
     fn transition_probabilities(&self) -> Vec<Vec<Vec<f32>>> {
-        todo!()
+        let num_states = self.num_states();
+        let num_actions = self.num_actions();
+        let mut transitions = vec![vec![vec![0.0; num_states]; num_actions]; num_states];
+
+        for state in 0..num_states {
+            for action in 0..num_actions {
+                for next_state in 0..3 {
+                    transitions[state][action][next_state] = 1.0 / 3.0; // Adversaire joue aléatoirement
+                }
+            }
+        }
+        transitions
     }
 
     fn reward_function(&self) -> Vec<Vec<f32>> {
-        todo!()
+        let num_states = self.num_states();
+        let num_actions = self.num_actions();
+        let mut rewards = vec![vec![0.0; num_actions]; num_states];
+
+        for state in 0..num_states {
+            for action in 0..num_actions {
+                rewards[state][action] = match (action, state) {
+                    (0, 2) | (1, 0) | (2, 1) => 1.0,  // Win
+                    (0, 0) | (1, 1) | (2, 2) => 0.0,  // Draw
+                    _ => -1.0,  // Loss
+                };
+            }
+        }
+        rewards
     }
 
     fn run_policy(&mut self, policy: &[usize]) -> f32 {
-        todo!()
+        self.reset();
+        while !self.is_game_over() {
+            let state = self.state_id();
+            let action = policy[state];
+            self.step(action);
+        }
+        self.score()
     }
-}
+    }
+
