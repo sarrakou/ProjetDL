@@ -3,7 +3,7 @@ use rand::Rng;
 
 #[derive(Clone)]
 pub struct RPS {
-    current_round: usize,
+    pub(crate) current_round: usize,
     max_rounds: usize,
     player_score: f32,
     opponent_last_move: Option<usize>,
@@ -11,9 +11,8 @@ pub struct RPS {
 
 impl RPS {
     fn get_opponent_move(&self) -> usize {
-        // For now, opponent plays randomly with equal probability
         let mut rng = rand::thread_rng();
-        rng.random_range(0..3)
+        rng.gen_range(0..3)
     }
 
     fn calculate_round_outcome(&self, player_move: usize, opponent_move: usize) -> f32 {
@@ -71,7 +70,7 @@ impl Environment for RPS {
 
     fn step(&mut self, action: usize) {
         if self.is_game_over() {
-            panic!("We are trying to play but game is over!");
+            panic!("We are trying to play but the game is over!");
         }
         if !self.available_actions().contains(&action) {
             panic!("Unauthorized action!");
@@ -86,15 +85,18 @@ impl Environment for RPS {
     }
 
     fn display(&self) {
-        println!("Round: {}/{}", self.current_round, self.max_rounds);
-        println!("Current Score: {}", self.player_score);
-        if let Some(last_move) = self.opponent_last_move {
-            println!("Opponent's last move: {}", match last_move {
-                0 => "Rock",
-                1 => "Paper",
-                2 => "Scissors",
-                _ => unreachable!(),
-            });
-        }
+        println!("Round: {}, Player Score: {}", self.current_round, self.player_score);
+    }
+
+    fn transition_probabilities(&self) -> Vec<Vec<Vec<f32>>> {
+        todo!()
+    }
+
+    fn reward_function(&self) -> Vec<Vec<f32>> {
+        todo!()
+    }
+
+    fn run_policy(&mut self, policy: &[usize]) -> f32 {
+        todo!()
     }
 }

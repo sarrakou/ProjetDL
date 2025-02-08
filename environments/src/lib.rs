@@ -13,7 +13,17 @@ pub trait Environment {
     fn score(&self) -> f32;
     fn step(&mut self, action: usize);
     fn display(&self);
+
+    // Méthodes supplémentaires nécessaires pour l'algorithme
+    fn transition_probabilities(&self) -> Vec<Vec<Vec<f32>>>;
+    fn reward_function(&self) -> Vec<Vec<f32>>;
+
+    // Nouvelle méthode pour exécuter une politique
+    fn run_policy(&mut self, policy: &[usize]) -> f32;
 }
+
+
+
 
 #[cfg(test)]
 mod tests {
