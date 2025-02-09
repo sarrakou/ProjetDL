@@ -195,4 +195,7 @@ impl RLAlgorithm for OffPolicyMonteCarloControl {
             .copied()
             .unwrap_or(available_actions[0])
     }
+     fn get_policy(&self) -> Vec<usize> {
+        self.policy.clone()  // Assuming self.policy contains the learned policy
+    }
 }

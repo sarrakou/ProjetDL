@@ -94,6 +94,10 @@ impl RLAlgorithm for QLearning {
 
         best_action
     }
+
+    fn get_policy(&self) -> Vec<usize> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

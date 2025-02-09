@@ -30,6 +30,13 @@ fn test_algorithm<T: Environment + Clone, A: RLAlgorithm>(algo_name: &str, mut a
     println!("Initial state:");
     env.display();
 
+    // Obtain the learned policy from the algorithm
+    let policy = algorithm.get_policy();
+
+    // Run the policy
+    let total_reward = env.run_policy(&policy);
+    println!("Total reward from running the policy: {}", total_reward);
+
     let max_steps = 1000;
     let mut steps = 0;
     while !env.is_game_over() && steps < max_steps {
@@ -57,6 +64,7 @@ fn test_algorithm<T: Environment + Clone, A: RLAlgorithm>(algo_name: &str, mut a
     }
     println!("Final score: {}", env.score());
 }
+
 
 fn main() {
     test_algorithm(

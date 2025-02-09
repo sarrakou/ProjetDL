@@ -21,11 +21,11 @@ impl Environment for MontyHall {
     }
 
     fn num_states(&self) -> usize {
-        3 * 3 * 3  // 3 doors * 3 initial choices * 3 revealed doors
+        3 * 3 * 3  // 3 portes * 3 choix initiaux * 3 portes révélées
     }
 
     fn num_actions(&self) -> usize {
-        3 // Choisir une porte A, B ou C (0,1,2) puis garder ou changer
+        3 // Choisir une porte A, B ou C (0, 1, 2) puis garder ou changer
     }
 
     fn state_id(&self) -> usize {
@@ -138,12 +138,13 @@ impl Environment for MontyHall {
                 }
             }
 
-            total_reward += self.score();
+            let reward = self.score();
+            println!("Récompense après l'action: {}", reward);
+            total_reward += reward;
         }
 
         println!("L'agent a changé de porte {} fois.", switch_count);
+        println!("Récompense totale: {}", total_reward);
         total_reward
     }
-
-
 }
