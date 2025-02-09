@@ -59,13 +59,13 @@ fn test_rps() {
 
     let mut env = RPS::new();
     assert_eq!(env.state_id(), 3);  // Initial state
-    assert_eq!(env.current_round, 0);
+    assert_eq!(env.get_current_round(), 0);
     assert_eq!(env.available_actions(), vec![0, 1, 2]);
 
     // Play one round
     env.step(0);  // Play Rock
     assert!(!env.is_game_over());  // Game shouldn't be over after one round
-    assert_eq!(env.current_round, 1);
+    assert_eq!(env.get_current_round(), 1);
 
     // Play second round
     env.step(1);  // Play Paper
@@ -73,6 +73,6 @@ fn test_rps() {
 
     // Test reset
     env.reset();
-    assert_eq!(env.current_round, 0);
+    assert_eq!(env.get_current_round(), 0);
     assert_eq!(env.score(), 0.0);
 }

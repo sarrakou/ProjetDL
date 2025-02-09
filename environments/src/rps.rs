@@ -10,6 +10,11 @@ pub struct RPS {
 }
 
 impl RPS {
+
+    pub fn get_current_round(&self) -> usize {
+        self.current_round
+    }
+
     fn get_opponent_move(&self) -> usize {
         // For now, opponent plays randomly with equal probability
         let mut rng = rand::thread_rng();
