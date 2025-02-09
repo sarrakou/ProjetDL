@@ -2,53 +2,56 @@ use rand::Rng;
 use crate::Environment;
 
 #[derive(Clone)]
-pub struct MontyHall {
+pub struct MontyHall2 {
     winning_door: usize,
     chosen_door: Option<usize>,
     revealed_door: Option<usize>,
     final_choice: Option<usize>,
+    actions_taken: usize, // Nombre d'actions effectuées
 }
 
-impl Environment for MontyHall {
+impl Environment for MontyHall2 {
     fn new() -> Self {
         let mut rng = rand::thread_rng();
-        MontyHall {
-            winning_door: rng.gen_range(0..3),
+        MontyHall2 {
+            winning_door: rng.gen_range(0..5), // Choix aléatoire d'une porte parmi 5
             chosen_door: None,
             revealed_door: None,
             final_choice: None,
+            actions_taken: 0,
         }
     }
 
     fn num_states(&self) -> usize {
-        3 * 3 * 3  // 3 portes * 3 choix initiaux * 3 portes révélées
+        5 * 5 * 5  // 5 portes * 5 choix initiaux * 5 portes révélées
     }
 
     fn num_actions(&self) -> usize {
-        3 // Choisir une porte A, B ou C (0, 1, 2) puis garder ou changer
+        5 // Choisir une porte parmi 5 (0, 1, 2, 3, 4)
     }
 
     fn state_id(&self) -> usize {
         let chosen = self.chosen_door.unwrap_or(0);
         let revealed = self.revealed_door.unwrap_or(0);
-        self.winning_door * 9 + chosen * 3 + revealed
+        self.winning_door * 25 + chosen * 5 + revealed
     }
 
     fn reset(&mut self) {
         let mut rng = rand::thread_rng();
-        self.winning_door = rng.gen_range(0..3);
+        self.winning_door = rng.gen_range(0..5);
         self.chosen_door = None;
         self.revealed_door = None;
         self.final_choice = None;
+        self.actions_taken = 0;
     }
 
     fn is_game_over(&self) -> bool {
-        self.final_choice.is_some()
+        self.actions_taken >= 4 || self.final_choice.is_some()
     }
 
     fn available_actions(&self) -> Vec<usize> {
         match (self.chosen_door, self.revealed_door) {
-            (None, _) => vec![0, 1, 2], // Premier choix de porte
+            (None, _) => (0..5).collect(), // Premier choix de porte parmi 5
             (Some(_), None) => vec![], // Révélation de la porte (automatique)
             (Some(_), Some(_)) => vec![0, 1], // Garder (0) ou Changer (1)
         }
@@ -75,16 +78,18 @@ impl Environment for MontyHall {
         if self.chosen_door.is_none() {
             self.chosen_door = Some(action);
             let mut rng = rand::thread_rng();
-            let mut doors = vec![0, 1, 2];
+            let mut doors = (0..5).collect::<Vec<_>>();
             doors.retain(|&d| d != action && d != self.winning_door);
             self.revealed_door = Some(doors[rng.gen_range(0..doors.len())]);
         } else {
             if action == 1 {
-                self.final_choice = Some(3 - self.chosen_door.unwrap() - self.revealed_door.unwrap());
+                self.final_choice = Some((0..5).filter(|&d| d != self.chosen_door.unwrap() && d != self.revealed_door.unwrap()).next().unwrap());
             } else {
                 self.final_choice = self.chosen_door;
             }
         }
+
+        self.actions_taken += 1;
     }
 
     fn display(&self) {
@@ -102,7 +107,7 @@ impl Environment for MontyHall {
         let mut rewards = vec![vec![0.0; self.num_actions()]; self.num_states()];
         for state in 0..self.num_states() {
             for action in 0..self.num_actions() {
-
+                // On vérifie si l'action mène à une décision finale et si elle est correcte
                 if self.is_game_over() {
                     rewards[state][action] = if self.final_choice == Some(self.winning_door) { 1.0 } else { 0.0 };
                 }
@@ -113,7 +118,7 @@ impl Environment for MontyHall {
 
     fn run_policy(&mut self, policy: &[usize]) -> f32 {
         let mut total_reward = 0.0;
-        let mut switch_count = 0;
+        let mut switch_count = 0; // Compteur de changement de porte
         let mut prev_choice = None;
 
         self.reset();
@@ -123,13 +128,14 @@ impl Environment for MontyHall {
                 break;
             }
 
-            prev_choice = self.chosen_door;
+            prev_choice = self.chosen_door; // Sauvegarde le choix précédent
             self.step(action);
 
-
+            // Affiche les actions et les choix à chaque étape
             println!("Action: {}, Choix initial: {:?}, Choix final: {:?}",
                      action, prev_choice, self.final_choice);
 
+            // Vérifie si le joueur a changé de porte après la révélation
             if let (Some(prev), Some(final_choice)) = (prev_choice, self.final_choice) {
                 if prev != final_choice {
                     switch_count += 1;

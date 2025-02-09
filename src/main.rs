@@ -4,8 +4,6 @@ use algorithms::{
     value_iteration::ValueIteration, // Import de ValueIteration
     on_montecarlo_control::MonteCarloControl,
     off_montecarlo_control::OffPolicyMonteCarloControl,
-
-
 };
 
 use environments::{
@@ -13,6 +11,7 @@ use environments::{
     line_world::LineWorld,
     grid_world::GridWorld,
     monty_hall_paradox1::MontyHall,
+    monty_hall_paradox2::MontyHall2, // Ajout du niveau 2 du Monty Hall
     rps::RPS,
 };
 
@@ -67,15 +66,17 @@ fn test_algorithm<T: Environment + Clone, A: RLAlgorithm>(algo_name: &str, mut a
 
 
 fn main() {
+
+
     test_algorithm(
         "Off-policy Monte Carlo",
         OffPolicyMonteCarloControl::new(
-            MontyHall::new().num_states(),
-            MontyHall::new().num_actions(),
+            MontyHall2::new().num_states(),
+            MontyHall2::new().num_actions(),
             0.1,  // epsilon
             0.99  // gamma
         ),
-        "Monty Hall",
-        MontyHall::new()
+        "Monty Hall (5 doors, 4 actions)",
+        MontyHall2::new()
     );
 }
