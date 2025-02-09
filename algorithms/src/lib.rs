@@ -2,7 +2,6 @@ pub mod q_learning;
 //pub mod dyna_q;
 
 pub mod policy_iteration;
-mod dynamic_programming;
 pub mod value_iteration;
 pub mod on_montecarlo_control;
 pub mod off_montecarlo_control;
