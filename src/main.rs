@@ -12,6 +12,7 @@ use environments::{
     Environment,
     line_world::LineWorld,
     grid_world::GridWorld,
+    monty_hall_paradox1::MontyHall,
     rps::RPS,
 };
 
@@ -61,38 +62,12 @@ fn main() {
     test_algorithm(
         "Off-policy Monte Carlo",
         OffPolicyMonteCarloControl::new(
-            LineWorld::new().num_states(),
-            LineWorld::new().num_actions(),
+            MontyHall::new().num_states(),
+            MontyHall::new().num_actions(),
             0.1,  // epsilon
             0.99  // gamma
         ),
-        "LineWorld",
-        LineWorld::new()
-    );
-
-    // Test for GridWorld with Off-policy Monte Carlo
-    test_algorithm(
-        "Off-policy Monte Carlo",
-        OffPolicyMonteCarloControl::new(
-            GridWorld::new().num_states(),
-            GridWorld::new().num_actions(),
-            0.1,  // epsilon
-            0.99  // gamma
-        ),
-        "GridWorld",
-        GridWorld::new()
-    );
-
-    // Test for RPS with Off-policy Monte Carlo
-    test_algorithm(
-        "Off-policy Monte Carlo",
-        OffPolicyMonteCarloControl::new(
-            RPS::new().num_states(),
-            RPS::new().num_actions(),
-            0.05,  // epsilon réduit
-            0.99   // gamma
-        ),
-        "RPS",
-        RPS::new()
+        "Monty Hall",
+        MontyHall::new()
     );
 }
