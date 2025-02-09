@@ -63,7 +63,7 @@ impl Environment for GridWorld {
             actions.push(3);
         }
 
-        println!("Available actions: {:?}", actions);
+
         actions
     }
 

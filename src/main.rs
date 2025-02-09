@@ -1,25 +1,27 @@
 use algorithms::{
     RLAlgorithm,
     policy_iteration::PolicyIteration,
+    value_iteration::ValueIteration, // Import de ValueIteration
+    on_montecarlo_control::MonteCarloControl,
+    off_montecarlo_control::OffPolicyMonteCarloControl,
+
+
 };
 
 use environments::{
     Environment,
     line_world::LineWorld,
-    grid_world::GridWorld,  // Import de GridWorld
+    grid_world::GridWorld,
     rps::RPS,
 };
 
-fn test_algorithm<T: Environment + Clone>(algo_name: &str, mut algorithm: PolicyIteration, env_name: &str, mut env: T) {
+fn test_algorithm<T: Environment + Clone, A: RLAlgorithm>(algo_name: &str, mut algorithm: A, env_name: &str, mut env: T) {
     println!("\nTesting {} on {} environment:", algo_name, env_name);
     println!("Number of states: {}", env.num_states());
     println!("Number of actions: {}", env.num_actions());
 
-    let p = env.transition_probabilities();  // Transition probabilities
-    let r = env.reward_function();  // Reward function
-    algorithm.policy_iteration(&p, &r);
-
-    let avg_reward: f32 = env.run_policy(&algorithm.get_policy());  // Run policy
+    let rewards_history = algorithm.train(&mut env, 100);
+    let avg_reward: f32 = rewards_history.iter().sum::<f32>() / rewards_history.len() as f32;
     println!("Average reward over training: {:.2}", avg_reward);
 
     env.reset();
@@ -40,13 +42,7 @@ fn test_algorithm<T: Environment + Clone>(algo_name: &str, mut algorithm: Policy
             break;
         }
 
-        // Vérification de la validité de l'indice de l'état avant d'accéder à la politique
-        if state >= algorithm.get_policy().len() {
-            println!("Invalid state index: {}", state);
-            break;
-        }
-
-        let action = algorithm.get_policy()[state];
+        let action = algorithm.get_best_action(state, &available_actions);
         println!("Taking action: {:?}", action);
 
         env.step(action);
@@ -62,38 +58,39 @@ fn test_algorithm<T: Environment + Clone>(algo_name: &str, mut algorithm: Policy
 }
 
 fn main() {
-    // Test de l'algorithme sur LineWorld
-    /*test_algorithm(
-        "Policy Iteration",
-        PolicyIteration::new(
+    test_algorithm(
+        "Off-policy Monte Carlo",
+        OffPolicyMonteCarloControl::new(
             LineWorld::new().num_states(),
-            LineWorld::new().num_actions(),  // Pass num_actions
-            0.99,  // gamma (discount factor)
-            1e-6   // theta (convergence threshold)
+            LineWorld::new().num_actions(),
+            0.1,  // epsilon
+            0.99  // gamma
         ),
         "LineWorld",
         LineWorld::new()
-    );*/
+    );
 
-    // Test de l'algorithme sur GridWorld
-    /*test_algorithm(
-        "Policy Iteration",
-        PolicyIteration::new(
+    // Test for GridWorld with Off-policy Monte Carlo
+    test_algorithm(
+        "Off-policy Monte Carlo",
+        OffPolicyMonteCarloControl::new(
             GridWorld::new().num_states(),
-            GridWorld::new().num_actions(),  // Pass num_actions
-            0.99,  // gamma (discount factor)
-            1e-6   // theta (convergence threshold)
+            GridWorld::new().num_actions(),
+            0.1,  // epsilon
+            0.99  // gamma
         ),
         "GridWorld",
         GridWorld::new()
-    );*/
+    );
+
+    // Test for RPS with Off-policy Monte Carlo
     test_algorithm(
-        "Policy Iteration",
-        PolicyIteration::new(
+        "Off-policy Monte Carlo",
+        OffPolicyMonteCarloControl::new(
             RPS::new().num_states(),
             RPS::new().num_actions(),
-            0.99,
-            1e-6
+            0.05,  // epsilon réduit
+            0.99   // gamma
         ),
         "RPS",
         RPS::new()
