@@ -1,7 +1,7 @@
 use algorithms::{
     RLAlgorithm,
     q_learning::QLearning,
-    dyna_q::DynaQ ,
+    dyna_q::DynaQ
 };
 
 use environments::{
@@ -9,13 +9,14 @@ use environments::{
     line_world::LineWorld,
     grid_world::GridWorld,
     rps::RPS,
+    secret_env::SecretEnv
 };
 
 use std::io::{self, Write};
 
 pub enum TrainedAI {
     QLearning(QLearning),
-    DynaQ(DynaQ),
+    DynaQ(DynaQ)
 }
 
 impl TrainedAI {
@@ -118,24 +119,137 @@ fn play_against_ai(algorithm: &str) {
     }
 }
 
-fn main() {
-    println!("Choose your opponent:");
-    println!("1. Q-Learning AI");
-    println!("2. Dyna-Q AI");
+fn get_user_choice(prompt: &str, options: &[&str]) -> usize {
+    loop {
+        println!("\n{}", prompt);
+        for (i, option) in options.iter().enumerate() {
+            println!("{}. {}", i + 1, option);
+        }
 
-    let choice = loop {
-        print!("Enter your choice (1 or 2): ");
+        print!("\nEnter your choice (1-{}): ", options.len());
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        match input.trim() {
-            "1" => break "q-learning",
-            "2" => break "dyna-q",
-            _ => println!("Invalid choice! Please enter 1 or 2."),
+        if let Ok(choice) = input.trim().parse::<usize>() {
+            if choice >= 1 && choice <= options.len() {
+                return choice - 1;
+            }
         }
-    };
+        println!("Invalid choice! Please try again.");
+    }
+}
+fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorithm: &str) {
+    println!("\nDemonstrating {} with {}:", env_name, algorithm);
 
-    play_against_ai(choice);
+    match algorithm {
+        "Q-Learning" => {
+            let mut ai = QLearning::new(
+                env.num_states(),
+                env.num_actions(),
+                0.1,
+                0.1,
+                0.99,
+            );
+
+            // Train the AI
+            println!("\nTraining AI...");
+            let rewards = ai.train(&mut env.clone(), 10000);
+            display_training_stats(&rewards, 10000, 1000);
+
+            // Demonstrate trained behavior
+            println!("\nDemonstrating trained behavior:");
+            env.reset();
+            println!("Initial state:");
+            env.display();
+
+            println!("\nPress Enter to see each step...");
+            let mut input = String::new();
+
+            while !env.is_game_over() {
+                io::stdin().read_line(&mut input).unwrap();
+                let state = env.state_id();
+                let action = ai.get_best_action(state, &env.available_actions());
+                env.step(action);
+                env.display();
+            }
+
+            println!("Final score: {}", env.score());
+        },
+        "Dyna-Q" => {
+            let mut ai = DynaQ::new(
+                env.num_states(),
+                env.num_actions(),
+                0.1,
+                0.1,
+                0.99,
+                5,
+            );
+
+            // Train the AI
+            println!("\nTraining AI...");
+            let rewards = ai.train(&mut env.clone(), 10000);
+            display_training_stats(&rewards, 10000, 1000);
+
+            // Demonstrate trained behavior
+            println!("\nDemonstrating trained behavior:");
+            env.reset();
+            println!("Initial state:");
+            env.display();
+
+            println!("\nPress Enter to see each step...");
+            let mut input = String::new();
+
+            while !env.is_game_over() {
+                io::stdin().read_line(&mut input).unwrap();
+                let state = env.state_id();
+                let action = ai.get_best_action(state, &env.available_actions());
+                env.step(action);
+                env.display();
+            }
+
+            println!("Final score: {}", env.score());
+        },
+        _ => panic!("Unknown algorithm"),
+    }
+}
+
+fn main() {
+    // Choose algorithm
+    let algorithms = ["Q-Learning", "Dyna-Q"];
+    let algorithm = algorithms[get_user_choice(
+        "Choose an algorithm:",
+        &algorithms
+    )];
+
+    // Choose environment
+    let environments = [
+        "Line World",
+        "Grid World",
+        "Rock Paper Scissors (Play against AI)",
+        "Secret Environment 0",
+        "Secret Environment 1",
+        "Secret Environment 2",
+        "Secret Environment 3",
+    ];
+    let env_choice = get_user_choice("Choose an environment:", &environments);
+
+    match env_choice {
+        0 => run_demonstration("Line World", LineWorld::new(), algorithm),
+        1 => run_demonstration("Grid World", GridWorld::new(), algorithm),
+        2 => {
+            println!("\nStarting Rock Paper Scissors against trained {}...", algorithm);
+            play_against_ai(algorithm);
+        },
+        3..=6 => {
+            let env_id = env_choice - 3;
+            run_demonstration(
+                &format!("Secret Environment {}", env_id),
+                SecretEnv::new(env_id),
+                algorithm
+            );
+        },
+        _ => unreachable!(),
+    }
 }
