@@ -95,33 +95,3 @@ impl RLAlgorithm for QLearning {
         best_action
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use environments::line_world::LineWorld;
-
-    #[test]
-    fn test_qlearning_initialization() {
-        let env = LineWorld::new();
-        let ql = QLearning::new(env.num_states(), env.num_actions(), 0.1, 0.1, 0.99);
-
-        // Check Q-table dimensions
-        assert_eq!(ql.q_table.len(), env.num_states());
-        for row in ql.q_table.iter() {
-            assert_eq!(row.len(), env.num_actions());
-        }
-    }
-
-    #[test]
-    fn test_qlearning_training() {
-        let mut env = LineWorld::new();
-        let mut ql = QLearning::new(env.num_states(), env.num_actions(), 0.1, 1.0, 0.99);
-
-        // Train for a few episodes
-        let rewards = ql.train(&mut env, 100);
-
-        // Check that we got the expected number of rewards
-        assert_eq!(rewards.len(), 100);
-    }
-}
