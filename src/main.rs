@@ -46,24 +46,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             println!("Training Q-Learning for {} episodes...", num_episodes);
             let rewards = ai.train(&mut env.clone(), num_episodes);
-
-            // Calculate and display statistics for each interval
-            for i in (0..num_episodes).step_by(log_interval) {
-                let end = (i + log_interval).min(num_episodes);
-                let interval_rewards = &rewards[i..end];
-
-                // Calculate statistics
-                let avg_reward: f32 = interval_rewards.iter().sum::<f32>() / interval_rewards.len() as f32;
-                let wins = interval_rewards.iter().filter(|&&r| r > 0.0).count();
-                let draws = interval_rewards.iter().filter(|&&r| r == 0.0).count();
-                let losses = interval_rewards.iter().filter(|&&r| r < 0.0).count();
-                let winrate = (wins as f32 * 100.0) / interval_rewards.len() as f32;
-
-                println!(
-                    "Episodes {}-{}: Avg Reward: {:.2}, Winrate: {:.1}% (W: {}, D: {}, L: {})",
-                    i, end-1, avg_reward, winrate, wins, draws, losses
-                );
-            }
+            display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::QLearning(ai)
         },
@@ -82,31 +65,31 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             println!("Training Dyna-Q for {} episodes...", num_episodes);
             let rewards = ai.train(&mut env.clone(), num_episodes);
-
-            // Calculate and display statistics for each interval
-            for i in (0..num_episodes).step_by(log_interval) {
-                let end = (i + log_interval).min(num_episodes);
-                let interval_rewards = &rewards[i..end];
-
-                // Calculate statistics
-                let avg_reward: f32 = interval_rewards.iter().sum::<f32>() / interval_rewards.len() as f32;
-                let wins = interval_rewards.iter().filter(|&&r| r > 0.0).count();
-                let draws = interval_rewards.iter().filter(|&&r| r == 0.0).count();
-                let losses = interval_rewards.iter().filter(|&&r| r < 0.0).count();
-                let winrate = (wins as f32 * 100.0) / interval_rewards.len() as f32;
-
-                println!(
-                    "Episodes {}-{}: Avg Reward: {:.2}, Winrate: {:.1}% (W: {}, D: {}, L: {})",
-                    i, end-1, avg_reward, winrate, wins, draws, losses
-                );
-            }
+            display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::DynaQ(ai)
         },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
 }
+fn display_training_stats(rewards: &[f32], num_episodes: usize, log_interval: usize) {
+    for i in (0..num_episodes).step_by(log_interval) {
+        let end = (i + log_interval).min(num_episodes);
+        let interval_rewards = &rewards[i..end];
 
+        // Calculate statistics
+        let avg_reward: f32 = interval_rewards.iter().sum::<f32>() / interval_rewards.len() as f32;
+        let wins = interval_rewards.iter().filter(|&&r| r > 0.0).count();
+        let draws = interval_rewards.iter().filter(|&&r| r == 0.0).count();
+        let losses = interval_rewards.iter().filter(|&&r| r < 0.0).count();
+        let winrate = (wins as f32 * 100.0) / interval_rewards.len() as f32;
+
+        println!(
+            "Episodes {}-{}: Avg Reward: {:.2}, Winrate: {:.1}% (W: {}, D: {}, L: {})",
+            i, end-1, avg_reward, winrate, wins, draws, losses
+        );
+    }
+}
 fn play_against_ai(algorithm: &str) {
     let ai = train_ai(algorithm);
     // Human mode: human plays as opponent
