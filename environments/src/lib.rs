@@ -1,6 +1,7 @@
 pub mod line_world;
 pub mod grid_world;
 pub mod rps;
+mod secret_env;
 
 pub trait Environment {
     fn new() -> Self;
