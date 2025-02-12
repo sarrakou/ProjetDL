@@ -1,5 +1,7 @@
 pub mod q_learning;
 pub mod dyna_q;
+pub mod reinforce;
+pub mod dqn;
 
 pub trait RLAlgorithm {
     fn train<T: environments::Environment>(&mut self, env: &mut T, max_episodes: usize) -> Vec<f32>;

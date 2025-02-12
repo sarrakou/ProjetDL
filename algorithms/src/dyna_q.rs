@@ -226,7 +226,8 @@ mod tests {
         // Count how many Q-values changed
         let changes = initial_q_values.iter()
             .zip(final_q_values.iter())
-            .filter(|(&a, &b)| (a - b).abs() > 1e-5)
+            .filter(|(&a, &b): &(&f32, &f32)| (a - b).abs() > 1e-5)
+
             .count();
 
         // Should have more changes than just from direct experience

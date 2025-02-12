@@ -1,7 +1,9 @@
 use algorithms::{
     RLAlgorithm,
     q_learning::QLearning,
-    dyna_q::DynaQ ,
+    dyna_q::DynaQ,
+    reinforce::Reinforce,
+    dqn::DQN,
 };
 
 use environments::{
@@ -210,4 +212,6 @@ fn main() {
         1000,
         5
     );
+
+
 }

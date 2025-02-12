@@ -16,5 +16,6 @@ rand = "0.9.0"
 rand_xoshiro = "0.7.0"
 
 [workspace.dependencies]
-rand = "0.9.0"
+rand = { version = "0.9.0", features = ["std"] }
 rand_xoshiro = "0.7.0"
+
