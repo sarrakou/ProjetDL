@@ -90,7 +90,7 @@ fn compare_algorithms<T: Environment + Clone>(
     }
 }
 fn main() {
-    println!("\nTesting on basic environments:");
+    /*println!("\nTesting on basic environments:");
     let q_learning = QLearning::new(
         LineWorld::new().num_states(),
         LineWorld::new().num_actions(),
@@ -148,16 +148,16 @@ fn main() {
         5,
     );
     test_algorithm("Dyna-Q", dyna_q, "Rock Paper Scissors", RPS::new());
-
+*/
     println!("\nTesting on secret environments:");
     for env_id in 0..4 {
         let env = SecretEnv::new(env_id);
         let q_learning = QLearning::new(
             env.num_states(),
             env.num_actions(),
-            0.1,    // alpha
-            0.1,    // epsilon
-            0.99,   // gamma
+            0.001,    // alpha
+            0.001,    // epsilon
+            0.999,   // gamma
         );
 
         let dyna_q = DynaQ::new(
