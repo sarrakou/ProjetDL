@@ -1,8 +1,10 @@
 use environments::Environment;
 use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
+use serde::{Serialize, Deserialize};
 use crate::RLAlgorithm;
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Sarsa {
     q_table: Vec<Vec<f32>>,
     alpha: f32,

@@ -4,6 +4,7 @@ pub mod policy_iteration;
 pub mod value_iteration;
 pub mod on_montecarlo_control;
 pub mod off_montecarlo_control;
+pub mod sarsa;
 
 pub trait RLAlgorithm: Send {
     fn train<T: environments::Environment + Clone>(&mut self, env: &mut T, max_episodes: usize) -> Vec<f32>;
