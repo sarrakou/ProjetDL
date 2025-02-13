@@ -2,6 +2,8 @@ pub mod line_world;
 pub mod grid_world;
 pub mod rps;
 pub mod secret_env;
+pub mod monty_hall_paradox1;
+pub mod monty_hall_paradox2;
 
 pub trait Environment {
     fn new() -> Self;
