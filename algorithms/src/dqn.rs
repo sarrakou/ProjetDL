@@ -2,7 +2,9 @@ use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use environments::Environment;
 use crate::RLAlgorithm;
+use serde::{Serialize, Deserialize};
 
+#[derive(Clone, Serialize, Deserialize)]
 struct Transition {
     state: usize,
     action: usize,
@@ -10,6 +12,8 @@ struct Transition {
     next_state: usize,
     done: bool,
 }
+
+#[derive(Clone, Serialize, Deserialize)]
 struct ReplayMemory {
     transitions: Vec<Transition>,
     capacity: usize,
@@ -45,6 +49,7 @@ impl ReplayMemory {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DQN {
     weights: Vec<Vec<f32>>,
     epsilon: f32,
