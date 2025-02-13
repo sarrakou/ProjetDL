@@ -3,16 +3,45 @@ use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use crate::RLAlgorithm;
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DynaQ {
     q_table: Vec<Vec<f32>>,
+    #[serde(serialize_with = "serialize_model", deserialize_with = "deserialize_model")]
     model: HashMap<(usize, usize), (f32, usize)>, // (state, action) -> (reward, next_state)
     alpha: f32,
     epsilon: f32,
     gamma: f32,
     planning_steps: usize,  // number of model-based updates (n in the algorithm)
+}
+
+fn serialize_model<S>(
+    model: &HashMap<(usize, usize), (f32, usize)>, // Changed this line
+    serializer: S
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // Convert the HashMap to a Vec of tuples
+    let serializable_model: Vec<((usize, usize), (f32, usize))> = // Changed this line
+        model.clone().into_iter().collect();
+
+    serializable_model.serialize(serializer)
+}
+
+fn deserialize_model<'de, D>(
+    deserializer: D
+) -> Result<HashMap<(usize, usize), (f32, usize)>, D::Error> // Changed this line
+where
+    D: Deserializer<'de>,
+{
+    // Deserialize into a Vec and then convert back to HashMap
+    let model: Vec<((usize, usize), (f32, usize))> = // Changed this line
+        Vec::deserialize(deserializer)?;
+
+    Ok(model.into_iter().collect())
 }
 
 impl DynaQ {

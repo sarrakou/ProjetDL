@@ -1,0 +1,22 @@
+{
+  "PolicyIteration": {
+    "num_states": 5,
+    "num_actions": 2,
+    "gamma": 0.99,
+    "theta": 0.1,
+    "policy": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "value": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}
