@@ -1,9 +1,10 @@
-
 use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use environments::Environment;
+use serde::{Serialize, Deserialize};
 use crate::RLAlgorithm;
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Reinforce {
     policy: Vec<Vec<f32>>,
     alpha: f32,

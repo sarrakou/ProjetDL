@@ -7,6 +7,7 @@ use algorithms::{
     on_montecarlo_control::MonteCarloControl,
     off_montecarlo_control::OffPolicyMonteCarloControl,
     sarsa::Sarsa,
+    reinforce::Reinforce,
 };
 
 use environments::{
@@ -31,6 +32,7 @@ pub enum TrainedAI {
     MonteCarloControl(MonteCarloControl),
     OffPolicyMonteCarloControl(OffPolicyMonteCarloControl),
     Sarsa(Sarsa),
+    Reinforce(Reinforce),
 }
 
 const ALPHA: f32 = 0.01;
@@ -45,6 +47,8 @@ const GAMMA_OFF_MC: f32 = 0.99;
 const ALPHA_SARSA: f32 = 0.1;
 const EPSILON_SARSA: f32 = 0.1;
 const GAMMA_SARSA: f32 = 0.99;
+const ALPHA_REINFORCE: f32 = 0.1;
+const GAMMA_REINFORCE: f32 = 0.99;
 impl TrainedAI {
     pub fn save(&self, env_name: &str, algorithm_name: &str) -> std::io::Result<()> {
         // Create models directory if it doesn't exist
@@ -79,6 +83,7 @@ impl TrainedAI {
             TrainedAI::MonteCarloControl(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::OffPolicyMonteCarloControl(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::Sarsa(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::Reinforce(ai) => ai.get_best_action(state, available_actions),
         }
     }
 
@@ -207,6 +212,21 @@ fn train_ai(algorithm: &str) -> TrainedAI {
             display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::Sarsa(ai)
+        },"reinforce" => {
+            let mut ai = Reinforce::new(
+                env.num_states(),
+                env.num_actions(),
+                ALPHA_REINFORCE,
+                GAMMA_REINFORCE,
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training REINFORCE for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::Reinforce(ai)
         },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
@@ -347,6 +367,12 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
                 EPSILON_SARSA,
                 GAMMA_SARSA,
             )),
+            "Reinforce" => TrainedAI::Reinforce(Reinforce::new(
+                env.num_states(),
+                env.num_actions(),
+                ALPHA_REINFORCE,
+                GAMMA_REINFORCE,
+            )),
             _ => panic!("Unknown algorithm"),
         };
 
@@ -360,6 +386,7 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
             TrainedAI::MonteCarloControl(c) => c.train(&mut env.clone(), 10000),
             TrainedAI::OffPolicyMonteCarloControl(c) => c.train(&mut env.clone(), 10000),
             TrainedAI::Sarsa(s) => s.train(&mut env.clone(), 10000),
+            TrainedAI::Reinforce(r) => r.train(&mut env.clone(), 10000),
         };
         display_training_stats(&rewards, 10000, 1000);
 
@@ -399,7 +426,8 @@ fn main() {
         "ValueIteration",
         "MonteCarloControl",
         "OffPolicyMonteCarloControl",
-        "Sarsa",];
+        "Sarsa",
+        "Reinforce"];
     let algorithm = algorithms[get_user_choice(
         "Choose an algorithm:",
         &algorithms
