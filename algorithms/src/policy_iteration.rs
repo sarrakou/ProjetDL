@@ -1,7 +1,7 @@
 use crate::RLAlgorithm;
-use environments::Environment;
-
 use serde::{Serialize, Deserialize};
+use environments::Environment;
+use rand::Rng;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PolicyIteration {
@@ -15,36 +15,42 @@ pub struct PolicyIteration {
 
 impl PolicyIteration {
     pub fn new(num_states: usize, num_actions: usize, gamma: f32, theta: f32) -> Self {
+        let mut rng = rand::thread_rng();
+        let policy = (0..num_states)
+            .map(|_| rng.gen_range(0..num_actions))
+            .collect();
+
         PolicyIteration {
             num_states,
             num_actions,
             gamma,
             theta,
-            policy: vec![0; num_states],
+            policy,
             value: vec![0.0; num_states],
         }
     }
 
-    fn improve_policy(&mut self, transition_probabilities: &[Vec<Vec<f32>>], reward_function: &[Vec<f32>]) -> bool {
+    fn improve_policy<T: Environment>(&mut self, env: &mut T) -> bool {
         let mut is_policy_stable = true;
+        let transitions = env.transition_probabilities();
+        let rewards = env.reward_function();
 
         for state in 0..self.num_states {
             let old_action = self.policy[state];
-            let mut max_value = f32::MIN;
-            let mut best_action = 0;
+            let available_actions = env.available_actions();
 
-            for action in 0..self.num_actions {
-                let mut value = 0.0;
-                for next_state in 0..self.num_states {
-                    value += transition_probabilities[state][action][next_state]
-                        * (reward_function[state][action] + self.gamma * self.value[next_state]);
-                }
-
-                if value > max_value {
-                    max_value = value;
-                    best_action = action;
-                }
-            }
+            let (best_action, _) = available_actions.iter()
+                .map(|&action| {
+                    let immediate_reward = rewards[state][action];
+                    let future_value: f32 = (0..self.num_states)
+                        .map(|next_state| {
+                            transitions[state][action][next_state] * self.gamma * self.value[next_state]
+                        })
+                        .sum();
+                    (action, immediate_reward + future_value)
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                .unwrap_or((0, f32::MIN));
 
             self.policy[state] = best_action;
 
@@ -56,18 +62,27 @@ impl PolicyIteration {
         is_policy_stable
     }
 
-    fn evaluate_policy(&mut self, transition_probabilities: &[Vec<Vec<f32>>], reward_function: &[Vec<f32>]) {
+    fn evaluate_policy<T: Environment>(&mut self, env: &mut T) {
+        let transitions = env.transition_probabilities();
+        let rewards = env.reward_function();
+
         loop {
             let mut delta: f32 = 0.0;
+
             for state in 0..self.num_states {
                 let old_value = self.value[state];
                 let action = self.policy[state];
-                let mut new_value = 0.0;
-                for next_state in 0..self.num_states {
-                    new_value += transition_probabilities[state][action][next_state]
-                        * (reward_function[state][action] + self.gamma * self.value[next_state]);
-                }
+
+                let immediate_reward = rewards[state][action];
+                let future_value: f32 = (0..self.num_states)
+                    .map(|next_state| {
+                        transitions[state][action][next_state] * self.gamma * self.value[next_state]
+                    })
+                    .sum();
+
+                let new_value = immediate_reward + future_value;
                 self.value[state] = new_value;
+
                 delta = delta.max((old_value - new_value).abs());
             }
 
@@ -77,12 +92,14 @@ impl PolicyIteration {
         }
     }
 
-    pub fn policy_iteration(&mut self, transition_probabilities: &[Vec<Vec<f32>>], reward_function: &[Vec<f32>]) {
+    pub fn policy_iteration<T: Environment>(&mut self, env: &mut T) {
+        let mut iterations = 0;
         loop {
-            self.evaluate_policy(transition_probabilities, reward_function);
-            if self.improve_policy(transition_probabilities, reward_function) {
+            self.evaluate_policy(env);
+            if self.improve_policy(env) || iterations >= 100 {
                 break;
             }
+            iterations += 1;
         }
     }
 
@@ -95,14 +112,20 @@ impl RLAlgorithm for PolicyIteration {
     fn train<T: Environment>(&mut self, env: &mut T, max_episodes: usize) -> Vec<f32> {
         let mut returns = Vec::new();
 
-        if self.num_states != env.num_states() || self.num_actions != env.num_actions() {
-            self.num_states = env.num_states();
-            self.num_actions = env.num_actions();
-            self.policy = vec![0; self.num_states];
-            self.value = vec![0.0; self.num_states];
-        }
+        self.num_states = env.num_states();
+        self.num_actions = env.num_actions();
 
-        // For each episode, we'll run through the environment to collect actual experience
+        // Initialize with random policy
+        let mut rng = rand::thread_rng();
+        self.policy = (0..self.num_states)
+            .map(|_| rng.gen_range(0..self.num_actions))
+            .collect();
+        self.value = vec![0.0; self.num_states];
+
+        // Run policy iteration
+        self.policy_iteration(env);
+
+        // Collect results
         for _ in 0..max_episodes {
             env.reset();
             let mut episode_reward = 0.0;
@@ -123,7 +146,6 @@ impl RLAlgorithm for PolicyIteration {
 
             returns.push(episode_reward);
         }
-
         returns
     }
 
@@ -132,23 +154,15 @@ impl RLAlgorithm for PolicyIteration {
             panic!("No available actions!");
         }
 
-        // Only consider available actions when choosing the best one
-        let mut best_action = available_actions[0];
-        let mut best_value = f32::MIN;
-
-        for &action in available_actions {
-            let value = if state < self.policy.len() {
-                self.value[state]
-            } else {
-                f32::MIN
-            };
-
-            if value > best_value {
-                best_value = value;
-                best_action = action;
-            }
+        if state >= self.policy.len() {
+            return available_actions[0];
         }
 
-        best_action
+        let action = self.policy[state];
+        if available_actions.contains(&action) {
+            action
+        } else {
+            available_actions[0]
+        }
     }
 }
