@@ -93,7 +93,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
     let env = RPS::new_with_mode(false);
     println!("\nTraining AI...");
 
-    match algorithm.to_lowercase().as_str() {
+    match algorithm {
         "q-learning" => {
             let mut ai = QLearning::new(
                 env.num_states(),
