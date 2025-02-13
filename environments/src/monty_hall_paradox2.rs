@@ -46,7 +46,7 @@ impl Environment for MontyHall2 {
     }
 
     fn is_game_over(&self) -> bool {
-        self.actions_taken >= 4 || self.final_choice.is_some()
+        self.actions_taken >= 4 || (self.chosen_door.is_some() && self.revealed_door.is_some() && self.final_choice.is_some())
     }
 
     fn available_actions(&self) -> Vec<usize> {
@@ -76,16 +76,21 @@ impl Environment for MontyHall2 {
         }
 
         if self.chosen_door.is_none() {
+            // Premier choix de porte
             self.chosen_door = Some(action);
             let mut rng = rand::thread_rng();
             let mut doors = (0..5).collect::<Vec<_>>();
             doors.retain(|&d| d != action && d != self.winning_door);
             self.revealed_door = Some(doors[rng.gen_range(0..doors.len())]);
         } else {
-            if action == 1 {
-                self.final_choice = Some((0..5).filter(|&d| d != self.chosen_door.unwrap() && d != self.revealed_door.unwrap()).next().unwrap());
-            } else {
-                self.final_choice = self.chosen_door;
+            if self.actions_taken < 4 {
+                if action == 1 {
+                    // Si l'action est de changer de porte
+                    self.final_choice = Some((0..5).filter(|&d| d != self.chosen_door.unwrap() && d != self.revealed_door.unwrap()).next().unwrap());
+                } else {
+                    // Garder la porte choisie initialement
+                    self.final_choice = self.chosen_door;
+                }
             }
         }
 

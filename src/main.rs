@@ -17,7 +17,9 @@ use environments::{
     line_world::LineWorld,
     grid_world::GridWorld,
     rps::RPS,
-    secret_env::SecretEnv
+    secret_env::SecretEnv,
+    monty_hall_paradox1::MontyHall,
+    monty_hall_paradox2::MontyHall2
 };
 
 use std::io::{self, Write};
@@ -510,6 +512,9 @@ fn main() {
         "Secret Environment 1",
         "Secret Environment 2",
         "Secret Environment 3",
+        "Monty hall 1",
+        "Monty hall 2",
+
     ];
     let env_choice = get_user_choice("Choose an environment:", &environments);
 
@@ -528,6 +533,8 @@ fn main() {
                 algorithm
             );
         },
+        7 => run_demonstration("Monty hall 1", MontyHall::new(), algorithm),
+        8 => run_demonstration("Monty hall 2", MontyHall2::new(), algorithm),
         _ => unreachable!(),
     }
 }
