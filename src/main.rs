@@ -110,7 +110,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
     println!("\nTraining AI...");
 
     match algorithm {
-        "q-learning" => {
+        "Q-Learning" => {
             let mut ai = QLearning::new(
                 env.num_states(),
                 env.num_actions(),
@@ -128,7 +128,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             TrainedAI::QLearning(ai)
         },
-        "dyna-q" => {
+        "Dyna-Q" => {
             let mut ai = DynaQ::new(
                 env.num_states(),
                 env.num_actions(),
