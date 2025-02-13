@@ -1,3 +1,5 @@
+
+use crate::RLAlgorithm;
 use std::f32::EPSILON;
 
 pub struct PolicyIteration {
@@ -88,9 +90,6 @@ impl PolicyIteration {
             // Step 2: Improve the policy
             self.improve_policy(transition_probabilities, reward_function);
 
-            // The policy has converged if no action changes in `improve_policy`
-            // Since we are already checking for policy stability inside `improve_policy`,
-            // we don't need to repeat the check here unless handling edge cases
             if self.policy.iter().enumerate().all(|(state, &action)| {
                 let mut max_value = f32::MIN;
                 let mut best_action = 0;
@@ -116,5 +115,65 @@ impl PolicyIteration {
     // Accessor for the learned policy
     pub fn get_policy(&self) -> &Vec<usize> {
         &self.policy
+    }
+}
+
+impl Default for PolicyIteration {
+    fn default() -> Self {
+        Self::new(1, 1, 0.9, 1e-6)
+    }
+}
+
+// Implementation of RLAlgorithm trait
+impl RLAlgorithm for PolicyIteration {
+
+    fn train<T: environments::Environment>(&mut self, env: &mut T, max_episodes: usize) -> Vec<f32> {
+        let mut returns = Vec::new();
+
+
+        if self.num_states != env.num_states() || self.num_actions != env.num_actions() {
+            self.num_states = env.num_states();
+            self.num_actions = env.num_actions();
+            self.policy = vec![0; self.num_states];
+            self.value = vec![0.0; self.num_states];
+        }
+
+        for _ in 0..max_episodes {
+
+            let transition_probabilities = env.transition_probabilities();
+            let reward_function = env.reward_function();
+
+
+            self.policy_iteration(&transition_probabilities, &reward_function);
+
+
+            let total_reward = env.run_policy(&self.policy);
+            returns.push(total_reward);
+        }
+
+        returns
+    }
+
+    fn get_best_action(&self, state: usize, available_actions: &[usize]) -> usize {
+        if available_actions.is_empty() {
+            return 0;
+        }
+
+        let mut best_action = available_actions[0];
+        let mut max_value = f32::MIN;
+
+        for &action in available_actions {
+            if self.policy[state] == action {
+                return action;  // Return the action from our policy if it's available
+            }
+
+            // Fallback to using value function if policy action is not available
+            if self.value[state] > max_value {
+                max_value = self.value[state];
+                best_action = action;
+            }
+        }
+
+        best_action
     }
 }

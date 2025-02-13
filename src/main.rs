@@ -1,12 +1,9 @@
-use algorithms::{
-    RLAlgorithm,
-    policy_iteration::PolicyIteration,
-    value_iteration::ValueIteration, // Import de ValueIteration
-    on_montecarlo_control::MonteCarloControl,
-    off_montecarlo_control::OffPolicyMonteCarloControl,
-
-
-};
+use algorithms::{RLAlgorithm,
+                 policy_iteration::PolicyIteration,
+                 value_iteration::ValueIteration,
+                 on_montecarlo_control::MonteCarloControl,
+                 off_montecarlo_control::OffPolicyMonteCarloControl,
+                 policy_iteration, off_montecarlo_control};
 
 use environments::{
     Environment,
@@ -59,40 +56,14 @@ fn test_algorithm<T: Environment + Clone, A: RLAlgorithm>(algo_name: &str, mut a
 
 fn main() {
     test_algorithm(
-        "Off-policy Monte Carlo",
-        OffPolicyMonteCarloControl::new(
+        "Policy Iteration",
+        MonteCarloControl::new(
             LineWorld::new().num_states(),
             LineWorld::new().num_actions(),
-            0.1,  // epsilon
-            0.99  // gamma
+            0.99,  // gamma
+            1e-6   // theta
         ),
         "LineWorld",
         LineWorld::new()
-    );
-
-    // Test for GridWorld with Off-policy Monte Carlo
-    test_algorithm(
-        "Off-policy Monte Carlo",
-        OffPolicyMonteCarloControl::new(
-            GridWorld::new().num_states(),
-            GridWorld::new().num_actions(),
-            0.1,  // epsilon
-            0.99  // gamma
-        ),
-        "GridWorld",
-        GridWorld::new()
-    );
-
-    // Test for RPS with Off-policy Monte Carlo
-    test_algorithm(
-        "Off-policy Monte Carlo",
-        OffPolicyMonteCarloControl::new(
-            RPS::new().num_states(),
-            RPS::new().num_actions(),
-            0.05,  // epsilon réduit
-            0.99   // gamma
-        ),
-        "RPS",
-        RPS::new()
     );
 }
