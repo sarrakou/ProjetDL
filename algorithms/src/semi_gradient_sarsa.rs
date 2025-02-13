@@ -2,7 +2,9 @@ use environments::Environment;
 use rand::prelude::*;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use crate::RLAlgorithm;
+use serde::{Serialize, Deserialize};
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SemiGradientSarsa {
     weights: Vec<f32>,
     num_features: usize,
