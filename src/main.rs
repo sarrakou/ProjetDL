@@ -8,6 +8,7 @@ use algorithms::{
     off_montecarlo_control::OffPolicyMonteCarloControl,
     sarsa::Sarsa,
     reinforce::Reinforce,
+    semi_gradient_sarsa::SemiGradientSarsa,
 };
 
 use environments::{
@@ -33,6 +34,7 @@ pub enum TrainedAI {
     OffPolicyMonteCarloControl(OffPolicyMonteCarloControl),
     Sarsa(Sarsa),
     Reinforce(Reinforce),
+    SemiGradientSarsa(SemiGradientSarsa)
 }
 
 const ALPHA: f32 = 0.01;
@@ -49,6 +51,10 @@ const EPSILON_SARSA: f32 = 0.1;
 const GAMMA_SARSA: f32 = 0.99;
 const ALPHA_REINFORCE: f32 = 0.1;
 const GAMMA_REINFORCE: f32 = 0.99;
+const ALPHA_SEMI_GRADIENT_SARSA: f32 = 0.1;
+const EPSILON_SEMI_GRADIENT_SARSA: f32 = 0.1;
+const GAMMA_SEMI_GRADIENT_SARSA: f32 = 0.99;
+
 impl TrainedAI {
     pub fn save(&self, env_name: &str, algorithm_name: &str) -> std::io::Result<()> {
         // Create models directory if it doesn't exist
@@ -84,6 +90,7 @@ impl TrainedAI {
             TrainedAI::OffPolicyMonteCarloControl(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::Sarsa(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::Reinforce(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::SemiGradientSarsa(ai) => ai.get_best_action(state, available_actions),
         }
     }
 
@@ -227,6 +234,21 @@ fn train_ai(algorithm: &str) -> TrainedAI {
             display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::Reinforce(ai)
+        },"SemiGradientSarsa" => {
+            let mut ai = SemiGradientSarsa::new(
+                env.num_states() * env.num_actions(),
+                ALPHA_SEMI_GRADIENT_SARSA,
+                EPSILON_SEMI_GRADIENT_SARSA,
+                GAMMA_SEMI_GRADIENT_SARSA,
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training SemiGradientSarsa for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::SemiGradientSarsa(ai)
         },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
@@ -373,6 +395,12 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
                 ALPHA_REINFORCE,
                 GAMMA_REINFORCE,
             )),
+            "SemiGradientSarsa" => TrainedAI::SemiGradientSarsa(SemiGradientSarsa::new(
+                env.num_states() * env.num_actions(),
+                ALPHA_SEMI_GRADIENT_SARSA,
+                EPSILON_SEMI_GRADIENT_SARSA,
+                GAMMA_SEMI_GRADIENT_SARSA,
+            )),
             _ => panic!("Unknown algorithm"),
         };
 
@@ -387,6 +415,7 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
             TrainedAI::OffPolicyMonteCarloControl(c) => c.train(&mut env.clone(), 10000),
             TrainedAI::Sarsa(s) => s.train(&mut env.clone(), 10000),
             TrainedAI::Reinforce(r) => r.train(&mut env.clone(), 10000),
+            TrainedAI::SemiGradientSarsa(s) => s.train(&mut env.clone(), 10000),
         };
         display_training_stats(&rewards, 10000, 1000);
 
@@ -427,7 +456,8 @@ fn main() {
         "MonteCarloControl",
         "OffPolicyMonteCarloControl",
         "Sarsa",
-        "Reinforce"];
+        "Reinforce",
+        "SemiGradientSarsa"];
     let algorithm = algorithms[get_user_choice(
         "Choose an algorithm:",
         &algorithms
