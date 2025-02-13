@@ -111,7 +111,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             TrainedAI::DynaQ(ai)
         },
-        "Policy Iteration" => {
+        "PolicyIteration" => {
             let mut ai = PolicyIteration::new(
                 env.num_states(),
                 env.num_actions(),
@@ -128,7 +128,7 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             TrainedAI::PolicyIteration(ai)
         },
-        "Value Iteration" => {
+        "ValueIteration" => {
             let mut ai = ValueIteration::new(
                 env.num_states(),
                 env.num_actions(),
