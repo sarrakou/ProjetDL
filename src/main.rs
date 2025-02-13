@@ -1,7 +1,9 @@
 use algorithms::{
     RLAlgorithm,
     q_learning::QLearning,
-    dyna_q::DynaQ
+    dyna_q::DynaQ,
+    policy_iteration::PolicyIteration,
+    value_iteration::ValueIteration,
 };
 
 use environments::{
@@ -13,19 +15,58 @@ use environments::{
 };
 
 use std::io::{self, Write};
+use serde::{Serialize, Deserialize};
+use std::fs;
+use std::path::Path;
 
+#[derive(Serialize, Deserialize)]
 pub enum TrainedAI {
     QLearning(QLearning),
-    DynaQ(DynaQ)
+    DynaQ(DynaQ),
+    PolicyIteration(PolicyIteration),
+    ValueIteration(ValueIteration),
 }
 
+const ALPHA: f32 = 0.01;
+const EPSILON: f32 = 0.01;
+const GAMMA: f32 = 0.99;
+const THETA: f32 = 1e-1;
+const PLANNING_STEPS: usize = 5;
+
 impl TrainedAI {
+    pub fn save(&self, env_name: &str, algorithm_name: &str) -> std::io::Result<()> {
+        // Create models directory if it doesn't exist
+        fs::create_dir_all("models")?;
+
+        let filename = format!("models/{}_{}.json", env_name, algorithm_name);
+        let json = serde_json::to_string_pretty(self)?;
+        fs::write(filename.clone(), json)?;
+        println!("Model saved to {}", filename);
+        Ok(())
+    }
+
+    pub fn load(env_name: &str, algorithm_name: &str) -> std::io::Result<Option<Self>> {
+        let filename = format!("models/{}_{}.json", env_name, algorithm_name);
+
+        if Path::new(&filename).exists() {
+            let json = fs::read_to_string(filename.clone())?;
+            let model = serde_json::from_str(&json)?;
+            println!("Model loaded from {}", filename);
+            Ok(Some(model))
+        } else {
+            println!("No saved model found at {}", filename);
+            Ok(None)
+        }
+    }
     fn get_best_action(&self, state: usize, available_actions: &[usize]) -> usize {
         match self {
             TrainedAI::QLearning(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::DynaQ(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::PolicyIteration(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::ValueIteration(ai) => ai.get_best_action(state, available_actions),
         }
     }
+
 }
 
 fn train_ai(algorithm: &str) -> TrainedAI {
@@ -70,6 +111,39 @@ fn train_ai(algorithm: &str) -> TrainedAI {
 
             TrainedAI::DynaQ(ai)
         },
+        "Policy Iteration" => {
+            let mut ai = PolicyIteration::new(
+                env.num_states(),
+                env.num_actions(),
+                0.99,  // gamma
+                1e-6,  // theta
+            );
+
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training PolicyIteration for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::PolicyIteration(ai)
+        },
+        "Value Iteration" => {
+            let mut ai = ValueIteration::new(
+                env.num_states(),
+                env.num_actions(),
+                0.99,  // gamma
+                1e-6,  // theta
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training ValueIteration for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::ValueIteration(ai)
+        },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
 }
@@ -91,9 +165,22 @@ fn display_training_stats(rewards: &[f32], num_episodes: usize, log_interval: us
         );
     }
 }
-fn play_against_ai(algorithm: &str) {
-    let ai = train_ai(algorithm);
-    // Human mode: human plays as opponent
+fn play_against_ai(algorithm: &str, env_name: &str) {
+
+    // Try to load existing model first
+    let ai = if let Ok(Some(loaded_ai)) = TrainedAI::load(env_name, algorithm) {
+        println!("Using saved model...");
+        loaded_ai
+    } else {
+        println!("No saved model found, training new model...");
+        let ai = train_ai(algorithm);
+        // Save the newly trained model
+        if let Err(e) = ai.save(env_name, algorithm) {
+            println!("Warning: Failed to save model: {}", e);
+        }
+        ai
+    };
+
     let mut game = RPS::new_with_mode(true);
 
     println!("\nWelcome to Rock Paper Scissors vs AI ({})!", algorithm);
@@ -140,84 +227,87 @@ fn get_user_choice(prompt: &str, options: &[&str]) -> usize {
         println!("Invalid choice! Please try again.");
     }
 }
+
 fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorithm: &str) {
     println!("\nDemonstrating {} with {}:", env_name, algorithm);
 
-    match algorithm {
-        "Q-Learning" => {
-            let mut ai = QLearning::new(
+    let mut ai = if let Ok(Some(loaded_ai)) = TrainedAI::load(env_name, algorithm) {
+        println!("Using saved model...");
+        loaded_ai
+    } else {
+        println!("No saved model found, training new model...");
+        let mut ai = match algorithm {
+            "Q-Learning" => TrainedAI::QLearning(QLearning::new(
                 env.num_states(),
                 env.num_actions(),
-                0.1,
-                0.1,
-                0.99,
-            );
-
-            // Train the AI
-            println!("\nTraining AI...");
-            let rewards = ai.train(&mut env.clone(), 10000);
-            display_training_stats(&rewards, 10000, 1000);
-
-            // Demonstrate trained behavior
-            println!("\nDemonstrating trained behavior:");
-            env.reset();
-            println!("Initial state:");
-            env.display();
-
-            println!("\nPress Enter to see each step...");
-            let mut input = String::new();
-
-            while !env.is_game_over() {
-                io::stdin().read_line(&mut input).unwrap();
-                let state = env.state_id();
-                let action = ai.get_best_action(state, &env.available_actions());
-                env.step(action);
-                env.display();
-            }
-
-            println!("Final score: {}", env.score());
-        },
-        "Dyna-Q" => {
-            let mut ai = DynaQ::new(
+                ALPHA,
+                EPSILON,
+                GAMMA,
+            )),
+            "Dyna-Q" => TrainedAI::DynaQ(DynaQ::new(
                 env.num_states(),
                 env.num_actions(),
-                0.1,
-                0.1,
-                0.99,
-                5,
-            );
+                ALPHA,
+                EPSILON,
+                GAMMA,
+                PLANNING_STEPS,
+            )),
+            "PolicyIteration" => TrainedAI::PolicyIteration(PolicyIteration::new(
+                env.num_states(),
+                env.num_actions(),
+                GAMMA,
+                THETA,
+            )),
+            "ValueIteration" => TrainedAI::ValueIteration(ValueIteration::new(
+                env.num_states(),
+                env.num_actions(),
+                GAMMA,
+                THETA,
+            )),
+            _ => panic!("Unknown algorithm"),
+        };
 
-            // Train the AI
-            println!("\nTraining AI...");
-            let rewards = ai.train(&mut env.clone(), 10000);
-            display_training_stats(&rewards, 10000, 1000);
+        // Train the AI
+        println!("\nTraining AI...");
+        let rewards = match &mut ai {
+            TrainedAI::QLearning(q) => q.train(&mut env.clone(), 10000),
+            TrainedAI::DynaQ(d) => d.train(&mut env.clone(), 10000),
+            TrainedAI::PolicyIteration(p) => p.train(&mut env.clone(), 10000),
+            TrainedAI::ValueIteration(v) => v.train(&mut env.clone(), 10000),
+        };
+        display_training_stats(&rewards, 10000, 1000);
 
-            // Demonstrate trained behavior
-            println!("\nDemonstrating trained behavior:");
-            env.reset();
-            println!("Initial state:");
-            env.display();
+        // Save the trained model
+        if let Err(e) = ai.save(env_name, algorithm) {
+            println!("Warning: Failed to save model: {}", e);
+        }
 
-            println!("\nPress Enter to see each step...");
-            let mut input = String::new();
+        ai
+    };
 
-            while !env.is_game_over() {
-                io::stdin().read_line(&mut input).unwrap();
-                let state = env.state_id();
-                let action = ai.get_best_action(state, &env.available_actions());
-                env.step(action);
-                env.display();
-            }
+    // Demonstrate trained behavior
+    println!("\nDemonstrating trained behavior:");
+    env.reset();
+    println!("Initial state:");
+    env.display();
 
-            println!("Final score: {}", env.score());
-        },
-        _ => panic!("Unknown algorithm"),
+    println!("\nPress Enter to see each step...");
+    let mut input = String::new();
+
+    while !env.is_game_over() {
+        io::stdin().read_line(&mut input).unwrap();
+        let state = env.state_id();
+        let action = ai.get_best_action(state, &env.available_actions());
+        env.step(action);
+        env.display();
     }
+
+    println!("Final score: {}", env.score());
 }
 
 fn main() {
     // Choose algorithm
-    let algorithms = ["Q-Learning", "Dyna-Q"];
+    let algorithms = ["Q-Learning", "Dyna-Q", "PolicyIteration", "ValueIteration"];
     let algorithm = algorithms[get_user_choice(
         "Choose an algorithm:",
         &algorithms
@@ -240,7 +330,7 @@ fn main() {
         1 => run_demonstration("Grid World", GridWorld::new(), algorithm),
         2 => {
             println!("\nStarting Rock Paper Scissors against trained {}...", algorithm);
-            play_against_ai(algorithm);
+            play_against_ai(algorithm, "RockPaperScissors");
         },
         3..=6 => {
             let env_id = env_choice - 3;
