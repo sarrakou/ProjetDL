@@ -9,6 +9,7 @@ use algorithms::{
     sarsa::Sarsa,
     reinforce::Reinforce,
     semi_gradient_sarsa::SemiGradientSarsa,
+    dqn::DQN
 };
 
 use environments::{
@@ -34,7 +35,8 @@ pub enum TrainedAI {
     OffPolicyMonteCarloControl(OffPolicyMonteCarloControl),
     Sarsa(Sarsa),
     Reinforce(Reinforce),
-    SemiGradientSarsa(SemiGradientSarsa)
+    SemiGradientSarsa(SemiGradientSarsa),
+    DQN(DQN),
 }
 
 const ALPHA: f32 = 0.01;
@@ -54,6 +56,12 @@ const GAMMA_REINFORCE: f32 = 0.99;
 const ALPHA_SEMI_GRADIENT_SARSA: f32 = 0.1;
 const EPSILON_SEMI_GRADIENT_SARSA: f32 = 0.1;
 const GAMMA_SEMI_GRADIENT_SARSA: f32 = 0.99;
+
+const ALPHA_DQN: f32 = 0.1;
+const EPSILON_DQN: f32 = 0.1;
+const GAMMA_DQN: f32 = 0.99;
+const MEMORY_CAPACITY_DQN: usize = 1000;
+const BATCH_SIZE_DQN: usize = 32;
 
 impl TrainedAI {
     pub fn save(&self, env_name: &str, algorithm_name: &str) -> std::io::Result<()> {
@@ -91,6 +99,7 @@ impl TrainedAI {
             TrainedAI::Sarsa(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::Reinforce(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::SemiGradientSarsa(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::DQN(ai) => ai.get_best_action(state, available_actions),
         }
     }
 
@@ -249,6 +258,24 @@ fn train_ai(algorithm: &str) -> TrainedAI {
             display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::SemiGradientSarsa(ai)
+        },"DQN" => {
+            let mut ai = DQN::new(
+                env.num_states(),
+                env.num_actions(),
+                ALPHA_DQN,
+                EPSILON_DQN,
+                GAMMA_DQN,
+                MEMORY_CAPACITY_DQN,
+                BATCH_SIZE_DQN
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training DQN for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::DQN(ai)
         },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
@@ -401,6 +428,15 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
                 EPSILON_SEMI_GRADIENT_SARSA,
                 GAMMA_SEMI_GRADIENT_SARSA,
             )),
+            "DQN" => TrainedAI::DQN(DQN::new(
+                env.num_states(),
+                env.num_actions(),
+                ALPHA_DQN,
+                EPSILON_DQN,
+                GAMMA_DQN,
+                MEMORY_CAPACITY_DQN,
+                BATCH_SIZE_DQN
+            )),
             _ => panic!("Unknown algorithm"),
         };
 
@@ -416,6 +452,7 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
             TrainedAI::Sarsa(s) => s.train(&mut env.clone(), 10000),
             TrainedAI::Reinforce(r) => r.train(&mut env.clone(), 10000),
             TrainedAI::SemiGradientSarsa(s) => s.train(&mut env.clone(), 10000),
+            TrainedAI::DQN(d) => d.train(&mut env.clone(), 10000),
         };
         display_training_stats(&rewards, 10000, 1000);
 
@@ -457,7 +494,8 @@ fn main() {
         "OffPolicyMonteCarloControl",
         "Sarsa",
         "Reinforce",
-        "SemiGradientSarsa"];
+        "SemiGradientSarsa",
+        "DQN"];
     let algorithm = algorithms[get_user_choice(
         "Choose an algorithm:",
         &algorithms
