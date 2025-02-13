@@ -1,9 +1,10 @@
 use rand::Rng;
 use std::collections::HashMap;
 use environments::Environment;
+use serde::{Serialize, Deserialize};
 use super::RLAlgorithm;
 
-
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MonteCarloControl {
     num_states: usize,
     num_actions: usize,

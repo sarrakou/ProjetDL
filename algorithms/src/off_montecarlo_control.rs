@@ -1,7 +1,9 @@
 use rand::Rng;
 use std::collections::{HashMap, HashSet};
+use serde::{Serialize, Deserialize};
 use crate::RLAlgorithm;
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OffPolicyMonteCarloControl {
     num_states: usize,
     num_actions: usize,
@@ -12,8 +14,10 @@ pub struct OffPolicyMonteCarloControl {
     gamma: f32,
     min_epsilon: f32,
     epsilon_decay: f32,
-    visit_counts: HashMap<(usize, usize), usize>, // (state, action) pairs
-    episode_states: HashSet<usize>,               // États visités dans l'épisode actuel
+    #[serde(skip)]
+    visit_counts: HashMap<(usize, usize), usize>,
+    #[serde(skip)]
+    episode_states: HashSet<usize>,
 }
 
 impl OffPolicyMonteCarloControl {

@@ -4,6 +4,8 @@ use algorithms::{
     dyna_q::DynaQ,
     policy_iteration::PolicyIteration,
     value_iteration::ValueIteration,
+    on_montecarlo_control::MonteCarloControl,
+    off_montecarlo_control::OffPolicyMonteCarloControl,
 };
 
 use environments::{
@@ -25,6 +27,8 @@ pub enum TrainedAI {
     DynaQ(DynaQ),
     PolicyIteration(PolicyIteration),
     ValueIteration(ValueIteration),
+    MonteCarloControl(MonteCarloControl),
+    OffPolicyMonteCarloControl(OffPolicyMonteCarloControl),
 }
 
 const ALPHA: f32 = 0.01;
@@ -32,6 +36,10 @@ const EPSILON: f32 = 0.01;
 const GAMMA: f32 = 0.99;
 const THETA: f32 = 1e-1;
 const PLANNING_STEPS: usize = 5;
+const EPSILON_MC: f32 = 0.1;
+const GAMMA_MC: f32 = 0.99;
+const EPSILON_OFF_MC: f32 = 0.1;
+const GAMMA_OFF_MC: f32 = 0.99;
 
 impl TrainedAI {
     pub fn save(&self, env_name: &str, algorithm_name: &str) -> std::io::Result<()> {
@@ -64,6 +72,8 @@ impl TrainedAI {
             TrainedAI::DynaQ(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::PolicyIteration(ai) => ai.get_best_action(state, available_actions),
             TrainedAI::ValueIteration(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::MonteCarloControl(ai) => ai.get_best_action(state, available_actions),
+            TrainedAI::OffPolicyMonteCarloControl(ai) => ai.get_best_action(state, available_actions),
         }
     }
 
@@ -143,6 +153,38 @@ fn train_ai(algorithm: &str) -> TrainedAI {
             display_training_stats(&rewards, num_episodes, log_interval);
 
             TrainedAI::ValueIteration(ai)
+        },
+        "MonteCarloControl" => {
+            let mut ai = MonteCarloControl::new(
+                env.num_states(),
+                env.num_actions(),
+                EPSILON_MC,
+                GAMMA_MC,
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training on policy MonteCarloControl for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::MonteCarloControl(ai)
+        },
+        "OffPolicyMonteCarloControl" => {
+            let mut ai = OffPolicyMonteCarloControl::new(
+                env.num_states(),
+                env.num_actions(),
+                EPSILON_OFF_MC,
+                GAMMA_OFF_MC,
+            );
+            let num_episodes = 10000;
+            let log_interval = 1000;
+
+            println!("Training OffPolicyMonteCarloControl for {} episodes...", num_episodes);
+            let rewards = ai.train(&mut env.clone(), num_episodes);
+            display_training_stats(&rewards, num_episodes, log_interval);
+
+            TrainedAI::OffPolicyMonteCarloControl(ai)
         },
         _ => panic!("Unknown algorithm: {}", algorithm),
     }
@@ -264,6 +306,18 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
                 GAMMA,
                 THETA,
             )),
+            "MonteCarloControl" => TrainedAI::MonteCarloControl(MonteCarloControl::new(
+                env.num_states(),
+                env.num_actions(),
+                EPSILON_MC,
+                GAMMA_MC,
+            )),
+            "OffPolicyMonteCarloControl" => TrainedAI::OffPolicyMonteCarloControl(OffPolicyMonteCarloControl::new(
+                env.num_states(),
+                env.num_actions(),
+                EPSILON_OFF_MC,
+                GAMMA_OFF_MC,
+            )),
             _ => panic!("Unknown algorithm"),
         };
 
@@ -274,6 +328,8 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
             TrainedAI::DynaQ(d) => d.train(&mut env.clone(), 10000),
             TrainedAI::PolicyIteration(p) => p.train(&mut env.clone(), 10000),
             TrainedAI::ValueIteration(v) => v.train(&mut env.clone(), 10000),
+            TrainedAI::MonteCarloControl(c) => c.train(&mut env.clone(), 10000),
+            TrainedAI::OffPolicyMonteCarloControl(c) => c.train(&mut env.clone(), 10000),
         };
         display_training_stats(&rewards, 10000, 1000);
 
@@ -307,7 +363,7 @@ fn run_demonstration<T: Environment + Clone>(env_name: &str, mut env: T, algorit
 
 fn main() {
     // Choose algorithm
-    let algorithms = ["Q-Learning", "Dyna-Q", "PolicyIteration", "ValueIteration"];
+    let algorithms = ["Q-Learning", "Dyna-Q", "PolicyIteration", "ValueIteration", "MonteCarloControl", "OffPolicyMonteCarloControl"];
     let algorithm = algorithms[get_user_choice(
         "Choose an algorithm:",
         &algorithms
